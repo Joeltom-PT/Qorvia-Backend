@@ -1,0 +1,31 @@
+# Ignore all service directories target folders and build files
+**/target/
+**/build/
+
+# Ignore IDE specific files in all services
+**/.idea/
+**/*.iws
+**/*.iml
+**/*.ipr
+**/.vscode/
+**/*.classpath
+**/*.project
+**/*.settings
+**/.factorypath
+**/.springBeans
+**/.sts4-cache
+
+# Ignore NetBeans and other IDE files in all services
+**/nbproject/private/
+**/nbbuild/
+**/dist/
+**/nbdist/
+**/.nb-gradle/
+**/build/
+
+# Ignore HELP.md files in all services
+**/HELP.md
+
+# Ensure source directories are not ignored
+!**/src/**/target/
+!**/src/**/build/

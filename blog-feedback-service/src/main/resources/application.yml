@@ -1,0 +1,12 @@
+server:
+  port: 8881
+spring:
+  application:
+    name: BLOG-FEEDBACK-SERVICE
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8065/eureka/
