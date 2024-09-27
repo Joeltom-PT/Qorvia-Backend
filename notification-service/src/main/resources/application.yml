@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: NOTIFICATION-SERVICE
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: camcorderiostore@gmail.com
+    password: uooy essp fqzi elxy
+    properties:
+      mail:
+        transport:
+          protocol: smtp
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+        debug: true
 
 eureka:
   client:

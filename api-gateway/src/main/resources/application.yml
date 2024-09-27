@@ -1,53 +1,84 @@
 server:
   port: 8888
-
-spring:
-  application:
-    name: API-GATEWAY
-
-  cloud:
-    gateway:
-      routes:
-        - id: account-service
-          uri: lb://ACCOUNT-SERVICE
-          predicates:
-            - Path=/account/**
-
-        - id: blog-feedback-service
-          uri: lb://BLOG-FEEDBACK-SERVICE
-          predicates:
-            - Path=/blog-feedback/**
-
-        - id: communication-service
-          uri: lb://COMMUNICATION-SERVICE
-          predicates:
-            - Path=/communication/**
-
-        - id: event-management-service
-          uri: lb://EVENT-MANAGEMENT-SERVICE
-          predicates:
-            - Path=/event/**
-
-        - id: notification-service
-          uri: lb://NOTIFICATION-SERVICE
-          predicates:
-            - Path=/notification/**
-
-        - id: payment-service
-          uri: lb://PAYMENT-SERVICE
-          predicates:
-            - Path=/payment/**
-
+#
+#spring:
+#  application:
+#    name: API-GATEWAY
+#
+#  cloud:
+#    gateway:
+#      cors:
+#        allowed-origin-patterns:
+#          - http://localhost:9000
+#        allowed-methods:
+#          - GET
+#          - POST
+#          - PUT
+#          - DELETE
+#          - OPTIONS
+#        allow-credentials: true
+#      routes:
+#        - id: account-service
+#          uri: lb://ACCOUNT-SERVICE
+#          predicates:
+#            - Path=/account/**
+#
+#        - id: blog-feedback-service
+#          uri: lb://BLOG-FEEDBACK-SERVICE
+#          predicates:
+#            - Path=/blog-feedback/**
+#
+#        - id: communication-service
+#          uri: lb://COMMUNICATION-SERVICE
+#          predicates:
+#            - Path=/communication/**
+#
+#        - id: event-management-service
+#          uri: lb://EVENT-MANAGEMENT-SERVICE
+#          predicates:
+#            - Path=/event/**
+#
+#        - id: notification-service
+#          uri: lb://NOTIFICATION-SERVICE
+#          predicates:
+#            - Path=/notification/**
+#
+#        - id: payment-service
+#          uri: lb://PAYMENT-SERVICE
+#          predicates:
+#            - Path=/payment/**
+#
 eureka:
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8065/eureka/
+#
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info
 
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:9000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+  application:
+    name: API-GATEWAY
