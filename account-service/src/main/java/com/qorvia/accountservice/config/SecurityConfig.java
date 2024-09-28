@@ -1,7 +1,9 @@
 package com.qorvia.accountservice.config;
 
-import com.qorvia.accountservice.auth.JwtAuthFilter;
+
 import com.qorvia.accountservice.config.CustomUserDetailService;
+import com.qorvia.accountservice.filter.JwtAuthFilter;
+import com.qorvia.accountservice.model.Roles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,12 +29,16 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/**").permitAll()
+                        .requestMatchers("/account/auth/**").permitAll()
+                        .requestMatchers("/account/user/**").hasRole("USER")
+                        .requestMatchers("/account/organizer/**").hasRole("ORGANIZER")
+                        .requestMatchers("/account/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -57,8 +63,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setPasswordEncoder(passwordEncoder());
         authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
 }

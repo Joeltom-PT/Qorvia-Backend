@@ -1,12 +1,15 @@
 package com.qorvia.accountservice.controller;
 
+import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
+import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
+import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
 import com.qorvia.accountservice.dto.user.UserDTO;
 import com.qorvia.accountservice.dto.request.LoginRequest;
 import com.qorvia.accountservice.dto.request.OtpRequest;
 import com.qorvia.accountservice.dto.request.RegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;
 import com.qorvia.accountservice.dto.response.OtpResponse;
-import com.qorvia.accountservice.service.AuthService;
+import com.qorvia.accountservice.service.auth.AuthService;
 import com.qorvia.accountservice.service.user.UserService;
 import com.qorvia.accountservice.service.jwt.JwtService;
 import com.qorvia.accountservice.utils.ResponseUtil;
@@ -18,7 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/account/auth/user")
+@RequestMapping("/account/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthController {
@@ -50,7 +53,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Object>> loginUser(@RequestBody LoginRequest loginRequest, HttpServletResponse response){
-
         return authService.loginUser(loginRequest,response);
     }
 
@@ -74,4 +76,14 @@ public class AuthController {
         return authService.logout(response);
     }
 
+    @PostMapping("/organizerRegister")
+    public ResponseEntity<ApiResponse<String>> organizerRegister(@RequestBody OrganizerRegisterRequest registerRequest){
+        return authService.registerOrganizer(registerRequest);
+    }
+
+    @PostMapping("/organizerLogin")
+    public ResponseEntity<ApiResponse<OrganizerDTO>> organizerLogin(@RequestBody OrganizerLoginRequest loginRequest,
+                                                                    HttpServletResponse response){
+        return authService.loginOrganizer(loginRequest, response);
+    }
 }

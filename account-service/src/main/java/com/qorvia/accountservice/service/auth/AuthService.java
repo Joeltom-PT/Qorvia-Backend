@@ -1,5 +1,8 @@
-package com.qorvia.accountservice.service;
+package com.qorvia.accountservice.service.auth;
 
+import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
+import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
+import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
 import com.qorvia.accountservice.dto.user.UserDTO;
 import com.qorvia.accountservice.dto.request.LoginRequest;
 import com.qorvia.accountservice.dto.request.OtpRequest;
@@ -19,4 +22,8 @@ public interface AuthService {
     String googleAuthentication(UserDTO userDTO, HttpServletResponse servletResponse) throws Exception;
 
     ResponseEntity<ApiResponse<Object>> logout(HttpServletResponse response);
+
+    ResponseEntity<ApiResponse<String>> registerOrganizer(OrganizerRegisterRequest registerRequest);
+
+    ResponseEntity<ApiResponse<OrganizerDTO>> loginOrganizer(OrganizerLoginRequest loginRequest, HttpServletResponse response);
 }

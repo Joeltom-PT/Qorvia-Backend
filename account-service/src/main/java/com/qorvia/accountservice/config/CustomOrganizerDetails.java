@@ -1,6 +1,6 @@
 package com.qorvia.accountservice.config;
 
-import com.qorvia.accountservice.model.user.UserInfo;
+import com.qorvia.accountservice.model.organizer.Organizer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,28 +8,27 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
-public class CustomUserDetails implements UserDetails {
+public class CustomOrganizerDetails implements UserDetails {
 
-    private final UserInfo user;
+    private final Organizer organizer;
 
-    public CustomUserDetails(UserInfo user) {
-        this.user = user;
+    public CustomOrganizerDetails(Organizer organizer) {
+        this.organizer = organizer;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRoles().toString()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + organizer.getRoles().toString()));
     }
-
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return organizer.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return organizer.getEmail();
     }
 
     @Override

@@ -1,8 +1,11 @@
 package com.qorvia.accountservice.controller;
 
+import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
+import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
 import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;
 import com.qorvia.accountservice.service.organizer.OrganizerService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,9 +19,5 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizerController {
 
     private final OrganizerService organizerService;
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> organizerRegister(@RequestBody OrganizerRegisterRequest registerRequest){
-        return organizerService.registerOrganizer(registerRequest);
-    }
 
 }

@@ -1,6 +1,8 @@
 package com.qorvia.accountservice.service.jwt;
 
+import com.qorvia.accountservice.model.organizer.Organizer;
 import com.qorvia.accountservice.model.user.UserInfo;
+import com.qorvia.accountservice.repository.OrganizerRepository;
 import com.qorvia.accountservice.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -22,24 +24,41 @@ public class JwtService {
     private final String jwtSecret = "ZmFrbKapka2Y7YWprZGZqYTtsZGZrYW";
 
     private final UserRepository userRepository;
+    private final OrganizerRepository organizerRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
 
     @Autowired
-    public JwtService(UserRepository userRepository) {
+    public JwtService(UserRepository userRepository, OrganizerRepository organizerRepository) {
         this.userRepository = userRepository;
+        this.organizerRepository = organizerRepository;
     }
 
-    public String generateToken(String email) {
+    public String generateTokenForUser(String email) {
         Date currentDate = new Date();
         Date expirationTime = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000L);
         UserInfo user = userRepository.findByEmail(email).get();
         return Jwts.builder()
                 .setSubject(email)
                 .claim("userId",user.getId())
-                .claim("userName", user.getUsername())
-                .claim("role",user.getRoles().toString()).setExpiration(expirationTime)
+                .claim("userEmail", user.getEmail())
+                .claim("role", "ROLE_" + user.getRoles().toString())
+                .setExpiration(expirationTime)
+                .signWith(SignatureAlgorithm.HS256, jwtSecret)
+                .compact();
+    }
+
+    public String generateTokenForOrganizer(String email) {
+        Date currentDate = new Date();
+        Date expirationTime = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000L);
+        Organizer organizer = organizerRepository.findByEmail(email).get();
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("userId",organizer.getId())
+                .claim("userEmail", organizer.getEmail())
+                .claim("role", "ROLE_" + organizer.getRoles().toString())
+                .setExpiration(expirationTime)
                 .signWith(SignatureAlgorithm.HS256, jwtSecret)
                 .compact();
     }

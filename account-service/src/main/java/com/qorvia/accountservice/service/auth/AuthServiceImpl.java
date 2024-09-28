@@ -1,6 +1,9 @@
-package com.qorvia.accountservice.service;
+package com.qorvia.accountservice.service.auth;
 
 import com.qorvia.accountservice.client.NotificationClient;
+import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
+import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
+import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
 import com.qorvia.accountservice.dto.user.UserDTO;
 import com.qorvia.accountservice.dto.request.LoginRequest;
 import com.qorvia.accountservice.dto.request.OtpRequest;
@@ -8,10 +11,14 @@ import com.qorvia.accountservice.dto.request.RegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;
 import com.qorvia.accountservice.dto.response.OtpResponse;
 import com.qorvia.accountservice.model.Roles;
+import com.qorvia.accountservice.model.organizer.Organizer;
+import com.qorvia.accountservice.model.organizer.OrganizerStatus;
+import com.qorvia.accountservice.model.organizer.RegisterRequestStatus;
 import com.qorvia.accountservice.model.user.UserInfo;
 import com.qorvia.accountservice.model.user.UserStatus;
 import com.qorvia.accountservice.model.VerificationStatus;
 import com.qorvia.accountservice.repository.AddressRepository;
+import com.qorvia.accountservice.repository.OrganizerRepository;
 import com.qorvia.accountservice.repository.UserRepository;
 import com.qorvia.accountservice.service.jwt.JwtService;
 import com.qorvia.accountservice.utils.ResponseUtil;
@@ -42,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationClient notificationClient;
     private final AuthenticationManager authenticationManager;
+    private final OrganizerRepository organizerRepository;
     private final JwtService jwtService;
 
     @Override
@@ -86,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
             Authentication authentication = authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-            final String jwtToken = jwtService.generateToken(loginRequest.getEmail());
+            final String jwtToken = jwtService.generateTokenForUser(loginRequest.getEmail());
 
          if (!userInfo.get().getVerificationStatus().equals(VerificationStatus.PENDING)) {
             setCookieInResponse(response,jwtToken);
@@ -127,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
                 OtpResponse otpResponse = new OtpResponse();
                 otpResponse.setEmail(otpRequest.getEmail());
                 otpResponse.setVerificationStatus(VerificationStatus.VERIFIED);
-                final String jwtToken = jwtService.generateToken(otpResponse.getEmail());
+                final String jwtToken = jwtService.generateTokenForUser(otpResponse.getEmail());
 
                 setCookieInResponse(servletResponse,jwtToken);
 
@@ -151,7 +159,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (existingUser.isPresent()) {
             if (existingUser.get().getIsGoogleAuth()) {
-                token = jwtService.generateToken(userDTO.getEmail());
+                token = jwtService.generateTokenForUser(userDTO.getEmail());
             } else {
                 throw new IllegalArgumentException("Email already registered, please log in using your credentials.");
             }
@@ -167,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
             user.setIsGoogleAuth(true);
             userRepository.save(user);
 
-            token = jwtService.generateToken(userDTO.getEmail());
+            token = jwtService.generateTokenForUser(userDTO.getEmail());
         }
 
         log.info("token: {}", token);
@@ -185,6 +193,75 @@ public class AuthServiceImpl implements AuthService {
             return ResponseUtil.buildResponse(HttpStatus.OK, "Logout successful", null);
         } catch (Exception e) {
             return ResponseUtil.buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Logout failed: " + e.getMessage(), null);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<String>> registerOrganizer(OrganizerRegisterRequest registerRequest) {
+        if (organizerRepository.existsByEmail(registerRequest.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse<>(HttpStatus.CONFLICT.value(), "Email already in use", null));
+        }
+
+        Organizer organizer = Organizer.builder()
+                .organizationName(registerRequest.getOrganizationName())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .phone(registerRequest.getPhone())
+                .website(registerRequest.getWebsite() != null ? registerRequest.getWebsite() : "")
+                .address(registerRequest.getAddress())
+                .address2(registerRequest.getAddress2() != null ? registerRequest.getAddress2() : "")
+                .city(registerRequest.getCity())
+                .country(registerRequest.getCountry())
+                .state(registerRequest.getState())
+                .facebook(registerRequest.getFacebook() != null ? registerRequest.getFacebook() : "")
+                .instagram(registerRequest.getInstagram() != null ? registerRequest.getInstagram() : "")
+                .twitter(registerRequest.getTwitter() != null ? registerRequest.getTwitter() : "")
+                .linkedin(registerRequest.getLinkedin() != null ? registerRequest.getLinkedin() : "")
+                .youtube(registerRequest.getYoutube() != null ? registerRequest.getYoutube() : "")
+                .profileImage(registerRequest.getProfileImage())
+                .about(registerRequest.getAbout())
+                .status(OrganizerStatus.ACTIVE)
+                .registrationStatus(RegisterRequestStatus.PENDING)
+                .verificationStatus(VerificationStatus.PENDING)
+                .roles(Roles.ORGANIZER)
+                .build();
+
+        organizerRepository.save(organizer);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(HttpStatus.CREATED.value(), "Organizer registered successfully", "Organizer ID: " + organizer.getId()));
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<OrganizerDTO>> loginOrganizer(OrganizerLoginRequest loginRequest, HttpServletResponse response) {
+        Optional<Organizer> organizerInfo = organizerRepository.findByEmail(loginRequest.getEmail());
+        log.info("organizer is getting in optional : .................................///// {}", organizerInfo.get().getEmail());
+        if (!organizerInfo.isPresent()) {
+            return ResponseUtil.buildResponse(HttpStatus.NOT_FOUND, "Organizer not found", null);
+        }
+        try {
+            log.info("Authentication using user, pass is starting /////////////////////////////");
+            Authentication authentication = authenticationManager
+                    .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+            log.info("Authentication using user, pass is ending [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
+            final String jwtToken = jwtService.generateTokenForOrganizer(loginRequest.getEmail());
+            log.info("jwt is generating //////////////// : {}", jwtToken);
+            setCookieInResponse(response, jwtToken);
+
+            OrganizerDTO organizerDTO = OrganizerDTO.builder()
+                    .name(organizerInfo.get().getOrganizationName())
+                    .email(organizerInfo.get().getEmail())
+                    .verificationStatus(organizerInfo.get().getVerificationStatus())
+                    .registerRequestStatus(organizerInfo.get().getRegistrationStatus())
+                    .status(organizerInfo.get().getStatus())
+                    .role(organizerInfo.get().getRoles())
+                    .build();
+
+            return ResponseUtil.buildResponse(HttpStatus.OK, "Login successful", organizerDTO);
+        } catch (Exception exception) {
+            System.out.println(exception.getMessage());
+            return ResponseUtil.buildResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", null);
         }
     }
 
