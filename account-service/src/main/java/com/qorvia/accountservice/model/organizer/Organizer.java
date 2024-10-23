@@ -70,6 +70,9 @@ public class Organizer {
     @Column(name = "about", nullable = false, length = 1000)
     private String about;
 
+    @Column(name = "total_events")
+    private Integer totalEvents;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private RegisterRequestStatus registrationStatus;

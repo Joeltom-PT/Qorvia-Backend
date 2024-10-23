@@ -1,6 +1,8 @@
 package com.qorvia.accountservice.exception.handler;
 
 import com.qorvia.accountservice.dto.response.ApiResponse;
+import com.qorvia.accountservice.exception.ResourceNotFoundException;
+import com.qorvia.accountservice.utils.ResponseUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -31,6 +33,11 @@ public class GlobalExceptionHandler {
                 errors
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return ResponseUtil.buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(),null);
     }
 
 }

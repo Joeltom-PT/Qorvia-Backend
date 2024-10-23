@@ -1,15 +1,15 @@
 package com.qorvia.accountservice.service.auth;
 
 import com.qorvia.accountservice.client.NotificationClient;
+import com.qorvia.accountservice.dto.auth.request.*;
 import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
 import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
 import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
+import com.qorvia.accountservice.dto.organizer.OrganizerVerificationTokenRequest;
+import com.qorvia.accountservice.dto.auth.response.OrganizerVerificationResponse;
 import com.qorvia.accountservice.dto.user.UserDTO;
-import com.qorvia.accountservice.dto.request.LoginRequest;
-import com.qorvia.accountservice.dto.request.OtpRequest;
-import com.qorvia.accountservice.dto.request.RegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;
-import com.qorvia.accountservice.dto.response.OtpResponse;
+import com.qorvia.accountservice.dto.auth.response.OtpResponse;
 import com.qorvia.accountservice.model.Roles;
 import com.qorvia.accountservice.model.organizer.Organizer;
 import com.qorvia.accountservice.model.organizer.OrganizerStatus;
@@ -17,7 +17,6 @@ import com.qorvia.accountservice.model.organizer.RegisterRequestStatus;
 import com.qorvia.accountservice.model.user.UserInfo;
 import com.qorvia.accountservice.model.user.UserStatus;
 import com.qorvia.accountservice.model.VerificationStatus;
-import com.qorvia.accountservice.repository.AddressRepository;
 import com.qorvia.accountservice.repository.OrganizerRepository;
 import com.qorvia.accountservice.repository.UserRepository;
 import com.qorvia.accountservice.service.jwt.JwtService;
@@ -45,7 +44,6 @@ import java.util.Random;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final AddressRepository addressRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationClient notificationClient;
     private final AuthenticationManager authenticationManager;
@@ -78,6 +76,7 @@ public class AuthServiceImpl implements AuthService {
         userDTO.setRole(Roles.USER);
         userDTO.setStatus(UserStatus.ACTIVE);
         userDTO.setVerificationStatus(VerificationStatus.PENDING);
+        userDTO.setIsGoogleAuth(false);
         notificationClient.sendOtp(request.getEmail());
 
         return userDTO;
@@ -90,6 +89,14 @@ public class AuthServiceImpl implements AuthService {
         if (!userInfo.isPresent()) {
             return ResponseUtil.buildResponse(HttpStatus.NOT_FOUND, "User not found", null);
         }
+        if (userInfo.get().getStatus().equals(UserStatus.INACTIVE)) {
+            return ResponseUtil.buildResponse(HttpStatus.FORBIDDEN, "User is blocked", null);
+        }
+
+        if (!userInfo.get().getStatus().equals(UserStatus.ACTIVE)) {
+            return ResponseUtil.buildResponse(HttpStatus.FORBIDDEN, "User account is not active", null);
+        }
+
         try {
             Authentication authentication = authenticationManager
                     .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
@@ -109,7 +116,7 @@ public class AuthServiceImpl implements AuthService {
             if (userInfo.get().getProfileImg() != null){
                 userDTO.setPro_img(userInfo.get().getProfileImg());
             }
-
+            userDTO.setIsGoogleAuth(userInfo.get().getIsGoogleAuth());
             return ResponseUtil.buildResponse(HttpStatus.OK, "Login successful", userDTO);
         } catch (Exception exception) {
             System.out.println(exception.getMessage());
@@ -262,6 +269,105 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception exception) {
             System.out.println(exception.getMessage());
             return ResponseUtil.buildResponse(HttpStatus.UNAUTHORIZED, "Invalid credentials", null);
+        }
+    }
+
+    @Override
+    public ResponseEntity<String> organizerEmailVerificationSendRequest(String email) {
+        try {
+            Organizer organizer = organizerRepository.findByEmail(email).get();
+
+            notificationClient.organizerEmailVerificationRequest(email);
+
+            return ResponseEntity.ok("Email verification request sent successfully.");
+        } catch (Exception e) {
+            log.error("Error sending email verification request for email: {}", email, e);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while sending the email verification request.");
+        }
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse<OrganizerVerificationResponse>> organizerVerificationTokenVerify(
+            OrganizerVerificationTokenRequest request, HttpServletResponse response) {
+        try {
+            ResponseEntity<ApiResponse<OrganizerVerificationResponse>> verificationResponse = notificationClient.organizerTokenVerify(request.getToken());
+
+            if (verificationResponse.getStatusCode() == HttpStatus.OK) {
+
+                Organizer organizer = organizerRepository.findByEmail(verificationResponse.getBody().getData().getEmail()).get();
+                organizer.setVerificationStatus(VerificationStatus.VERIFIED);
+
+                organizerRepository.save(organizer);
+
+                Cookie cookie = new Cookie("token", null);
+                cookie.setMaxAge(0);
+                cookie.setPath("/");
+                response.addCookie(cookie);
+
+                OrganizerVerificationResponse verificationData = verificationResponse.getBody().getData();
+                return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), "Email verification request sent successfully.", verificationData));
+            } else {
+                return ResponseEntity.badRequest().body(new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Invalid token or email.", null));
+            }
+        } catch (Exception e) {
+            log.error("Error during email verification: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An error occurred while processing the email verification request.", null));
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
+        String email = forgotPasswordRequest.getEmail();
+
+        Optional<UserInfo> userInfo = userRepository.findByEmail(email);
+        if (userInfo.isPresent()) {
+            if (!userInfo.get().getIsGoogleAuth()) {
+                notificationClient.sendOtp(email);
+                return ResponseEntity.ok("OTP sent to registered email address.");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Cannot send OTP to Google authenticated accounts.");
+            }
+        }
+
+        Optional<Organizer> organizer = organizerRepository.findByEmail(email);
+        if (organizer.isPresent()) {
+            notificationClient.sendOtp(email);
+            return ResponseEntity.ok("OTP sent to registered email address.");
+        }
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Email address not found.");
+    }
+
+    @Override
+    public ResponseEntity<?> forgotPasswordReset(ForgotPasswordResetRequest passwordResetRequest) {
+        String email = passwordResetRequest.getEmail();
+        String otp = passwordResetRequest.getOtp();
+        String newPassword = passwordResetRequest.getPassword();
+
+        ResponseEntity<ApiResponse<Boolean>> verifyOtpResponse = notificationClient.verifyOtp(email, otp);
+        if (verifyOtpResponse.getStatusCode() == HttpStatus.OK && verifyOtpResponse.getBody() != null && verifyOtpResponse.getBody().getData()) {
+            Optional<UserInfo> userInfo = userRepository.findByEmail(email);
+            if (userInfo.isPresent()) {
+                UserInfo user = userInfo.get();
+                user.setPassword(passwordEncoder.encode(newPassword));
+                userRepository.save(user);
+                return ResponseEntity.ok("Password reset successfully.");
+            }
+            Optional<Organizer> organizer = organizerRepository.findByEmail(email);
+            if (organizer.isPresent()) {
+                Organizer org = organizer.get();
+                org.setPassword(passwordEncoder.encode(newPassword));
+                organizerRepository.save(org);
+                return ResponseEntity.ok("Password reset successfully.");
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email address not found.");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid OTP.");
         }
     }
 

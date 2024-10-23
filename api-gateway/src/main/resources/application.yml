@@ -1,5 +1,35 @@
 server:
   port: 8888
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8065/eureka/
+
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:9000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+
+  application:
+    name: API-GATEWAY
+
+
 #
 #spring:
 #  application:
@@ -48,37 +78,3 @@ server:
 #          predicates:
 #            - Path=/payment/**
 #
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://localhost:8065/eureka/
-#
-#management:
-#  endpoints:
-#    web:
-#      exposure:
-#        include: health,info
-
-
-spring:
-  cloud:
-    gateway:
-      globalcors:
-        corsConfigurations:
-          "[/**]":
-            allowedOrigins:
-              - "http://localhost:9000"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
-            maxAge: 3600
-
-  application:
-    name: API-GATEWAY

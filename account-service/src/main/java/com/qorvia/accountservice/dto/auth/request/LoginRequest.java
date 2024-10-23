@@ -1,4 +1,4 @@
-package com.qorvia.accountservice.dto.request;
+package com.qorvia.accountservice.dto.auth.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

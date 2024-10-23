@@ -19,7 +19,6 @@ public class WebFluxCorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.addAllowedOrigin("http://localhost:9000");
-        configuration.addAllowedOrigin("http://localhost");
 
         configuration.setAllowCredentials(true);
         configuration.addAllowedMethod(HttpMethod.GET);

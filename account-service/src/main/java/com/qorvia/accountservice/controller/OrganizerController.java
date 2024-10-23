@@ -1,6 +1,5 @@
 package com.qorvia.accountservice.controller;
 
-import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
 import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
 import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;

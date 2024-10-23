@@ -52,9 +52,8 @@ public class UserInfo {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "address_id", referencedColumnName = "id")
-    private UserAddress address;
+    @Column(nullable = true)
+    private String address;
 
     @PrePersist
     protected void onCreate() {

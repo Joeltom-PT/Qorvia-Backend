@@ -1,14 +1,14 @@
 package com.qorvia.accountservice.controller;
 
+import com.qorvia.accountservice.dto.auth.request.*;
 import com.qorvia.accountservice.dto.organizer.OrganizerDTO;
 import com.qorvia.accountservice.dto.organizer.OrganizerLoginRequest;
 import com.qorvia.accountservice.dto.organizer.OrganizerRegisterRequest;
+import com.qorvia.accountservice.dto.organizer.OrganizerVerificationTokenRequest;
+import com.qorvia.accountservice.dto.auth.response.OrganizerVerificationResponse;
 import com.qorvia.accountservice.dto.user.UserDTO;
-import com.qorvia.accountservice.dto.request.LoginRequest;
-import com.qorvia.accountservice.dto.request.OtpRequest;
-import com.qorvia.accountservice.dto.request.RegisterRequest;
 import com.qorvia.accountservice.dto.response.ApiResponse;
-import com.qorvia.accountservice.dto.response.OtpResponse;
+import com.qorvia.accountservice.dto.auth.response.OtpResponse;
 import com.qorvia.accountservice.service.auth.AuthService;
 import com.qorvia.accountservice.service.user.UserService;
 import com.qorvia.accountservice.service.jwt.JwtService;
@@ -86,4 +86,26 @@ public class AuthController {
                                                                     HttpServletResponse response){
         return authService.loginOrganizer(loginRequest, response);
     }
+
+    @PostMapping("/organizerEmailVerify")
+    public ResponseEntity<String> organizerEmailVerificationRequest(@RequestBody OrganizerEmailVerifySendRequest request) {
+        log.info("OrganizerVerifying with email : {}", request.getEmail());
+        return authService.organizerEmailVerificationSendRequest(request.getEmail());
+    }
+
+    @PostMapping("/organizerVerificationToken")
+    public ResponseEntity<ApiResponse<OrganizerVerificationResponse>> organizerVerificationToken(@RequestBody OrganizerVerificationTokenRequest request, HttpServletResponse response){
+        return authService.organizerVerificationTokenVerify(request,response);
+    }
+
+    @PostMapping("/forgotPasswordRequest")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest forgotPasswordRequest){
+        return authService.forgotPassword(forgotPasswordRequest);
+    }
+
+    @PostMapping("/forgotPasswordReset")
+    public ResponseEntity<?> forgotPasswordReset(@RequestBody ForgotPasswordResetRequest passwordResetRequest){
+        return authService.forgotPasswordReset(passwordResetRequest);
+    }
+
 }
